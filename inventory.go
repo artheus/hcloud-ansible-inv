@@ -2,56 +2,91 @@ package hcloudinventory
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
-	"log"
-
-	"github.com/Jeffail/gabs"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 )
 
-// GetInventoryFromAPI returns a JSON-formatted and Ansible-compatible representation of all virtual servers that are listed under the specified Hetzner Cloud API account.
-func GetInventoryFromAPI(client *hcloud.Client) (json string) {
-	// New JSON return object
-	jsonReturn := gabs.New()
+type HostVars struct {
+	Ip         string `json:"ip"`
+	Location   string `json:"location"`
+	Datacenter string `json:"datacenter"`
+	Image      string `json:"image"`
+}
 
+func newHostVars(Ip string, Location string, Datacenter string, Image string) *HostVars {
+	hv := new(HostVars)
+	hv.Ip = Ip
+	hv.Location = Location
+	hv.Datacenter = Datacenter
+	hv.Image = Image
+	return hv
+}
+
+type Meta struct {
+	Hostvars map[string]*HostVars `json:"hostvars"`
+}
+
+func newMeta() *Meta {
+	m := new(Meta)
+	m.Hostvars = make(map[string]*HostVars)
+	return m
+}
+
+func (s *Meta) addHostvar(name string, hostVar *HostVars) {
+	s.Hostvars[name] = hostVar
+}
+
+type GroupDefinition struct {
+	Hosts    []string               `json:"hosts"`
+	Vars     map[string]interface{} `json:"vars,omitempty"`
+	Children []string               `json:"children,omitempty"`
+}
+
+func newGroupDefinition() *GroupDefinition {
+	gd := new(GroupDefinition)
+	gd.Hosts = []string{}
+	gd.Vars = make(map[string]interface{})
+	gd.Children = []string{}
+	return gd
+}
+
+func (s *GroupDefinition) addHost(hostname string) {
+	s.Hosts = append(s.Hosts, hostname)
+}
+
+func (s *GroupDefinition) addVar(name string, obj interface{}) {
+	s.Vars[name] = obj
+}
+
+func (s *GroupDefinition) addChild(name string) {
+	s.Children = append(s.Children, name)
+}
+
+// GetInventoryFromAPI returns a JSON-formatted and Ansible-compatible representation of all virtual servers that are listed under the specified Hetzner Cloud API account.
+func GetInventoryFromAPI(client *hcloud.Client) (jsonString string) {
 	// Fetch servers from Hetzner Cloud API using it's official golang API client
 	serverList, err := client.Server.All(context.Background())
-
-	// Check for errors during fetching from Hetzner API
 	if err != nil {
-		log.Fatalln("could not fetch server list from Hetzner Cloud API - error: " + err.Error())
+		fmt.Errorf("%e", err)
 	}
 
-	// Prepare host array
-	_, err = jsonReturn.ArrayOfSize(len(serverList), "hetzner-cloud", "hosts")
-	if err != nil {
-		log.Fatalln("could not initialize JSON host array - error: " + err.Error())
+	inventory := make(map[string]interface{})
+	meta := newMeta()
+	gd := newGroupDefinition()
+
+	for _, hostDef := range serverList {
+		hostVars := newHostVars(hostDef.PublicNet.IPv4.IP.String(), hostDef.Datacenter.Location.Name, hostDef.Datacenter.Name, hostDef.Image.Name)
+		gd.addHost(hostDef.Name)
+		meta.addHostvar(hostDef.Name, hostVars)
+		//meta.addHostvar("", newHostVars(serv, Ip, Location, Datacenter, Image))
 	}
 
-	// Iterate through the returned server list
-	for i, server := range serverList {
-		// Sadly we need to represent the hostname by reverse DNS as this is the only
-		// *really* reliable information we can fetch from the API about the hostname
-		hostName := server.PublicNet.IPv4.DNSPtr
+	inventory["all"] = gd
+	inventory["_meta"] = meta
 
-		// Set meta information for the host
-		_, err := jsonReturn.Set(server.Datacenter.Name, "_meta", "hostvars", hostName, "dcName")
-		if err != nil {
-			log.Fatalln("could not set the datacenter name in the hostvars - error: " + err.Error())
-		}
+	svlst, _ := json.Marshal(inventory)
 
-		_, err = jsonReturn.Set(server.Datacenter.Location.City, "_meta", "hostvars", hostName, "dcCity")
-		if err != nil {
-			log.Fatalln("could not set the datacenter location city in the hostvars - error: " + err.Error())
-		}
-
-		// Set host information
-		_, err = jsonReturn.Path("hetzner-cloud.hosts").SetIndex(hostName, i)
-		if err != nil {
-			log.Fatalln("could not set the host information in the host array - error: " + err.Error())
-		}
-	}
-
-	return jsonReturn.StringIndent("", "  ")
-
+	return string(svlst)
 }

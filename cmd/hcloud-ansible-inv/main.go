@@ -10,8 +10,8 @@ import (
 
 	"strings"
 
+	"github.com/artheus/hcloud-ansible-inv"
 	"github.com/hetznercloud/hcloud-go/hcloud"
-	"github.com/thannaske/hcloud-ansible-inv"
 )
 
 const configFileName = "config.json"
