@@ -23,8 +23,8 @@ jobs:
       - run: GOOS=darwin go build -o /tmp/artifacts/${PROJ_NAME}_Darwin-${GOARCH} ${BUILD_FILE}
       - run: GOOS=linux go build -o /tmp/artifacts/${PROJ_NAME}_Linux-${GOARCH} ${BUILD_FILE}
       - run: GOOS=windows go build -o /tmp/artifacts/${PROJ_NAME}_Win-${GOARCH} ${BUILD_FILE}
-      - store_artifacs:
-        path: /tmp/artifacts
+      - store_artifacts:
+          path: /tmp/artifacts
 workflows:
   version: 2
   build_and_test:
