@@ -1,0 +1,14 @@
+---
+
+  group:
+    - p-servername01-dc1
+    - p-servername02-dc1
+    - p-otherserver01-dc1
+  tooling:
+    - p-tools01-dc1
+    - p-otherserver01-dc1
+  swarm:
+    - p-swarmmanager01-dc1
+    - p-swarmmanager02-dc1
+    - p-swarmworker01-dc1
+    - p-swarmworker02-dc1

@@ -1,0 +1,11 @@
+---
+
+  group:
+    - servername
+    - otherserver
+  tooling:
+    - tools
+    - otherserver
+  swarm:
+    - swarmmanager
+    - swarmworker

@@ -23,10 +23,11 @@ func printOutput(apiToken string) {
 	var srvClient hcloudinventory.ServerClient
 	hetznerClient := hcloud.NewClient(hcloud.WithToken(apiToken)).Server
 	srvClient = &hetznerClient
-	inventoryOutput := hcloudinventory.GetInventoryFromAPI(srvClient)
+	inventory := hcloudinventory.GetInventoryFromAPI(srvClient, nil)
 
 	// Success. Print the output!
-	fmt.Println(inventoryOutput)
+	inventory.UpdateAllGroup()
+	fmt.Println(inventory.Json())
 
 	// Exit with code zero.
 	os.Exit(0)
