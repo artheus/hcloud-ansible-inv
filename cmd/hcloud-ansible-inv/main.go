@@ -20,8 +20,10 @@ const configFileName = "config.json"
 var ErrNoAPIKey = errors.New("there was no API key specified: please check documentation to learn how to specify it")
 
 func printOutput(apiToken string) {
-	hetznerClient := hcloud.NewClient(hcloud.WithToken(apiToken))
-	inventoryOutput := hcloudinventory.GetInventoryFromAPI(hetznerClient)
+	var srvClient hcloudinventory.ServerClient
+	hetznerClient := hcloud.NewClient(hcloud.WithToken(apiToken)).Server
+	srvClient = &hetznerClient
+	inventoryOutput := hcloudinventory.GetInventoryFromAPI(srvClient)
 
 	// Success. Print the output!
 	fmt.Println(inventoryOutput)

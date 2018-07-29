@@ -10,22 +10,30 @@ import (
 
 type HostVars struct {
 	Ip         string `json:"ip"`
+	Dns        string `json:"dns"`
 	Location   string `json:"location"`
 	Datacenter string `json:"datacenter"`
 	Image      string `json:"image"`
 }
 
-func newHostVars(Ip string, Location string, Datacenter string, Image string) *HostVars {
-	hv := new(HostVars)
-	hv.Ip = Ip
-	hv.Location = Location
-	hv.Datacenter = Datacenter
-	hv.Image = Image
-	return hv
-}
-
 type Meta struct {
 	Hostvars map[string]*HostVars `json:"hostvars"`
+}
+
+type GroupDefinition struct {
+	Hosts    []string               `json:"hosts"`
+	Vars     map[string]interface{} `json:"vars,omitempty"`
+	Children []string               `json:"children,omitempty"`
+}
+
+func newHostVars(ip string, dns string, location string, datacenter string, image string) *HostVars {
+	hv := new(HostVars)
+	hv.Ip = ip
+	hv.Dns = dns
+	hv.Location = location
+	hv.Datacenter = datacenter
+	hv.Image = image
+	return hv
 }
 
 func newMeta() *Meta {
@@ -36,12 +44,6 @@ func newMeta() *Meta {
 
 func (s *Meta) addHostvar(name string, hostVar *HostVars) {
 	s.Hostvars[name] = hostVar
-}
-
-type GroupDefinition struct {
-	Hosts    []string               `json:"hosts"`
-	Vars     map[string]interface{} `json:"vars,omitempty"`
-	Children []string               `json:"children,omitempty"`
 }
 
 func newGroupDefinition() *GroupDefinition {
@@ -64,12 +66,16 @@ func (s *GroupDefinition) addChild(name string) {
 	s.Children = append(s.Children, name)
 }
 
+type ServerClient interface {
+	All(ctx context.Context) ([]*hcloud.Server, error)
+}
+
 // GetInventoryFromAPI returns a JSON-formatted and Ansible-compatible representation of all virtual servers that are listed under the specified Hetzner Cloud API account.
-func GetInventoryFromAPI(client *hcloud.Client) (jsonString string) {
+func GetInventoryFromAPI(client ServerClient) (jsonString string) {
 	// Fetch servers from Hetzner Cloud API using it's official golang API client
-	serverList, err := client.Server.All(context.Background())
+	serverList, err := client.All(context.Background())
 	if err != nil {
-		fmt.Errorf("%e", err)
+		fmt.Printf("%e", err)
 	}
 
 	inventory := make(map[string]interface{})
@@ -77,7 +83,7 @@ func GetInventoryFromAPI(client *hcloud.Client) (jsonString string) {
 	gd := newGroupDefinition()
 
 	for _, hostDef := range serverList {
-		hostVars := newHostVars(hostDef.PublicNet.IPv4.IP.String(), hostDef.Datacenter.Location.Name, hostDef.Datacenter.Name, hostDef.Image.Name)
+		hostVars := newHostVars(hostDef.PublicNet.IPv4.IP.String(), hostDef.PublicNet.IPv4.DNSPtr, hostDef.Datacenter.Location.Name, hostDef.Datacenter.Name, hostDef.Image.Name)
 		gd.addHost(hostDef.Name)
 		meta.addHostvar(hostDef.Name, hostVars)
 		//meta.addHostvar("", newHostVars(serv, Ip, Location, Datacenter, Image))
