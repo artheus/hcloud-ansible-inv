@@ -1,5 +1,7 @@
 # Ansible Inventory for Hetzner Cloud
-![](https://api.travis-ci.org/thannaske/hcloud-ansible-inv.svg?branch=master)  ![](https://goreportcard.com/badge/github.com/thannaske/hcloud-ansible-inv)
+[![CircleCI](https://circleci.com/gh/artheus/hcloud-ansible-inv/tree/master.svg?style=svg)](https://circleci.com/gh/artheus/hcloud-ansible-inv/tree/master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/artheus/hcloud-ansible-inv)](https://goreportcard.com/report/github.com/artheus/hcloud-ansible-inv)
+[![GoDoc](https://godoc.org/github.com/artheus/hcloud-ansible-inv?status.svg)](https://godoc.org/github.com/artheus/hcloud-ansible-inv)
 
 Automate your [Hetzner Cloud](https://www.hetzner.de/cloud) instances by using a dynamic inventory script for [Ansible](https://github.com/ansible/ansible).
 
@@ -15,10 +17,6 @@ You are able to use the within your Ansible commands using the `-i` flag.
 
 This command should execute the Ansible ping module and should return a pong for each server you are running at Hetzner Cloud.
 Please consult [Ansible's documentation](http://docs.ansible.com) for further resources concerning the usage of Ansible itself.
-
-## Development Roadmap (dev-branch) ![](https://travis-ci.org/thannaske/hcloud-ansible-inv.svg?branch=dev)
-* Multiple API keys for multiple projects in configuration file  
-(e.g. `-p $project` or `--project $project`)
 
 ## License
 This project is open source (MIT License). For more information see [LICENSE](https://github.com/thannaske/hcloud-ansible-inv/blob/master/LICENSE).
