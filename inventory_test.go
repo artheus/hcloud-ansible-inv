@@ -40,7 +40,7 @@ func (s *ExampleHostGrouper) GroupsForHost(hostname string) (groupNames []string
 	simplehostname := submatches[1]
 
 	for group, hosts := range s.groupMappings {
-		if SliceContains(hosts, simplehostname) {
+		if sliceContains(hosts, simplehostname) {
 			groups = append(groups, group)
 		}
 	}
@@ -105,7 +105,7 @@ func TestWithCustomGrouper(t *testing.T) {
 
 	inventory.UpdateAllGroup()
 	inventory.UpdateAllGroup() // Twice only for the coverage..
-	inventory.Json()
+	inventory.JSON()
 	//fmt.Println(inventory.Json())
 
 	// TODO: Actually make some assertions to make sure that we are getting the right results.

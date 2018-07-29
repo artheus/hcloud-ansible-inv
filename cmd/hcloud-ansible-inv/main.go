@@ -27,7 +27,7 @@ func printOutput(apiToken string) {
 
 	// Success. Print the output!
 	inventory.UpdateAllGroup()
-	fmt.Println(inventory.Json())
+	fmt.Println(inventory.JSON())
 
 	// Exit with code zero.
 	os.Exit(0)

@@ -12,29 +12,34 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+// HostVars is host specific variables to be stored in meta
 type HostVars struct {
-	Ip         string `json:"ansible_host"`
-	Dns        string `json:"hcloud_dns"`
+	IP         string `json:"ansible_host"`
+	DNS        string `json:"hcloud_dns"`
 	Location   string `json:"hcloud_location"`
 	Datacenter string `json:"hcloud_datacenter"`
 	Image      string `json:"hcloud_image"`
 }
 
+// Meta is the _meta tag in the resulted Inventory
 type Meta struct {
 	Hostvars map[string]*HostVars `json:"hostvars"`
 }
 
+// GroupDefinition is used to define a group of hosts
 type GroupDefinition struct {
 	Hosts    []string               `json:"hosts"`
 	Vars     map[string]interface{} `json:"vars,omitempty"`
 	Children []string               `json:"children,omitempty"`
 }
 
+// Host is a tool struct to let Inventory keep track of groups
 type Host struct {
 	Name   string
 	Groups []string
 }
 
+// Inventory is the main struct which will be returned as a result of GetInventoryFromAPI
 type Inventory struct {
 	inventory map[string]interface{}
 	allHosts  []*Host
@@ -42,8 +47,8 @@ type Inventory struct {
 
 func newHostVars(ip string, dns string, location string, datacenter string, image string) *HostVars {
 	hv := new(HostVars)
-	hv.Ip = ip
-	hv.Dns = dns
+	hv.IP = ip
+	hv.DNS = dns
 	hv.Location = location
 	hv.Datacenter = datacenter
 	hv.Image = image
@@ -66,14 +71,17 @@ func newInventory() *Inventory {
 	return i
 }
 
+// SetMeta will set the meta field of the inventory
 func (s *Inventory) SetMeta(meta *Meta) {
 	s.inventory["_meta"] = meta
 }
 
+// AddHost will add a Host to the inventory
 func (s *Inventory) AddHost(host *Host) {
 	s.allHosts = append(s.allHosts, host)
 }
 
+// Group is used for getting and/or creating a group for storing hosts
 func (s *Inventory) Group(name string) *GroupDefinition {
 	if _, ok := s.inventory[name]; !ok {
 		s.inventory[name] = newGroupDefinition()
@@ -82,13 +90,14 @@ func (s *Inventory) Group(name string) *GroupDefinition {
 	return s.inventory[name].(*GroupDefinition)
 }
 
+// UpdateAllGroup will refresh the Inventory group named all
 func (s *Inventory) UpdateAllGroup() {
 	if _, ok := s.inventory["all"]; ok {
 		s.inventory["all"] = nil
 	}
 
 	allGroup := newGroupDefinition()
-	for group, _ := range s.inventory {
+	for group := range s.inventory {
 		if strings.HasPrefix(group, "_") {
 			continue
 		}
@@ -104,7 +113,8 @@ func (s *Inventory) UpdateAllGroup() {
 	s.inventory["all"] = allGroup
 }
 
-func (s *Inventory) Json() (jsonString string) {
+// JSON will output a json representation of the Inventory
+func (s *Inventory) JSON() (jsonString string) {
 	output, _ := json.Marshal(s.inventory)
 	return string(output)
 }
@@ -136,15 +146,20 @@ func (s *GroupDefinition) addChild(name string) {
 	s.Children = append(s.Children, name)
 }
 
+// ServerClient is an interface for allowing mocking in tests
 type ServerClient interface {
 	All(ctx context.Context) ([]*hcloud.Server, error)
 }
 
+// Grouper is an interface for the grouping of hosts
 type Grouper interface {
+	// GroupsForHost should return any groups that the host is a part of
 	GroupsForHost(hostname string) (groupNames []string)
 }
 
+// DefaultGrouper is the default implementation of Grouper
 type DefaultGrouper struct {
+	// GroupMappings is a mapping of hosts, like group => host1, host2 ...
 	GroupMappings map[string][]string
 }
 
@@ -154,6 +169,7 @@ func newDefaultGrouper() *DefaultGrouper {
 	return hg
 }
 
+// LoadYaml loads a YAML file and tries to Unmarshal it into the GroupMappings type
 func (s *DefaultGrouper) LoadYaml(fileName string) {
 	yamlFile, err := ioutil.ReadFile(fileName)
 	if err != nil {
@@ -165,11 +181,12 @@ func (s *DefaultGrouper) LoadYaml(fileName string) {
 	}
 }
 
+// GroupsForHost will return any groups that the host is a part of
 func (s *DefaultGrouper) GroupsForHost(hostname string) (groupNames []string) {
 	groups := []string{}
 
 	for group, hosts := range s.GroupMappings {
-		if SliceContains(hosts, hostname) {
+		if sliceContains(hosts, hostname) {
 			groups = append(groups, group)
 		}
 	}
@@ -177,7 +194,7 @@ func (s *DefaultGrouper) GroupsForHost(hostname string) (groupNames []string) {
 	return groups
 }
 
-func SliceContains(slice []string, item string) (result bool) {
+func sliceContains(slice []string, item string) (result bool) {
 	for _, sliceItem := range slice {
 		if sliceItem == item {
 			return true
