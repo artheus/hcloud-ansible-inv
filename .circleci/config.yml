@@ -1,17 +1,31 @@
-# Golang CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-go/ for more details
 version: 2
 jobs:
-  build:
+  test:
     docker:
-      # specify the version
       - image: circleci/golang:1.9
-
     working_directory: /go/src/github.com/artheus/hcloud-ansible-inv
     steps:
       - checkout
-
-      # specify any bash command here prefixed with `run:
       - run: go get -v -t -d ./...
       - run: go test -v ./...
+  build:
+    docker:
+      - image: circleci/golang:1.9
+        environment:
+          GOARCH: amd64
+          BUILD_FILE: cmd/hcloud-ansible-inv/main.go
+          PROJ_NAME: hcloud-ansible-inv
+    working_directory: /go/src/github.com/artheus/hcloud-ansible-inv
+    steps:
+      - checkout
+      - run: go get -v -t -d ./...
+      - run: go test -v ./...
+      - run: GOOS=darwin go build -o ${PROJ_NAME}_Darwin-${GOARCH} ${BUILD_FILE}
+      - run: GOOS=linux go build -o ${PROJ_NAME}_Linux-${GOARCH} ${BUILD_FILE}
+      - run: GOOS=windows go build -o ${PROJ_NAME}_Win-${GOARCH} ${BUILD_FILE}
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build
+      - test
